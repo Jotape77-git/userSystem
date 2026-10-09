@@ -1,6 +1,7 @@
-const form = document.querySelector("formCadastro");
-const cep = document.querySelector("#cep");
+const form = document.querySelector("#formCadastro");
 const buscarCep = document.querySelector("#buscarCep");
+const cep = document.querySelector("#cep");
+const estado = document.querySelector('#estado');
 
 function mensagem(texto, tipo = "sucesso") {
     Toastify({
@@ -16,42 +17,52 @@ function mensagem(texto, tipo = "sucesso") {
     }).showToast();
 }
 
-
-    // escuta o evento do formulário
+// escuta o evento do formulário
 form.addEventListener("submit", function(event) {
     event.preventDefault();
-    console.log(Object.fromEntries([...form.elements]
-        .filter(element => element.id)
-        .map(element => [element.id, element.value])
-    
+    console.log(Object.fromEntries(
+        [...form.elements]
+            .filter(abacate => abacate.id)
+            .map(abacate => [abacate.id, abacate.value])
     ));
-    
     form.reset();
-
 });
 
-buscarCep.addEventListener("click", async function () {
-    const valor = cep.value.replace (/\D/g, "");
+buscarCep.addEventListener("click", async function() {
+    const valor = cep.value.replace(/\D/g, "");
     if (valor.length !== 8) {
-        alert("Digite um CEP válido!", "erro");
+        mensagem("Digite um CEP válido.", "erro");
         return;
-    }
-    try {
+    } try {
         const resposta = await fetch(`https://viacep.com.br/ws/${valor}/json/`);
         const dados = await resposta.json();
         if (!resposta.ok || dados.erro)
-            throw new Error("CEP não encontrado");
+            throw new Error("CEP não encontrado.");
         document.querySelector("#logradouro").value = dados.logradouro;
         document.querySelector("#bairro").value = dados.bairro;
         document.querySelector("#estado").value = dados.estado;
         document.querySelector("#cidade").value = dados.localidade;
-        mensagem("CEP encontrado com sucesso!")
-    }
-
-    catch (erro) {
+        mensagem("CEP encontrado com sucesso!");
+    } catch (erro) {
         mensagem(erro.message, "erro");
     }
-        
+});
 
+function adicionarOpcao(selecao, texto, valor) {
+    selecao.add(new Option(texto, valor));
+}
 
-})
+async function carregarEstados() {
+    try {
+        const resposta = await fetch("https://servicodados.ibge.gov.br/api/v1/localidades/estados?orderBy=nome");
+        if (!resposta.ok) {
+            throw new Error("Não foi possível carregar os estados.");
+        }
+        const estados = await resposta.json();
+        estados.forEach(a => adicionarOpcao(estado, a.nome, a.sigla));
+    } catch (error) {
+        mensagem(error.message, "erro");
+    }
+}
+
+carregarEstados();
